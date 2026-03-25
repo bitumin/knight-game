@@ -68,9 +68,7 @@ const knightAttack = (state: GameState, knights: Knight[]) => {
 }
 
 const getLastStanding = (knights: Knight[])=> {
-  for (let i = 0; i < knights.length; ++i) {
-    if (knights[i].hp > 0) return knights[i]
-  }
+  return knights.find(k => k.hp > 0)
 }
 
 const main = () => {
