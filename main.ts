@@ -1,15 +1,4 @@
-interface IKnight {
-  id: number,
-  hp: number,
-}
-
-interface IGameState {
-  turn: number,
-  attackingKnightId: number,
-  defendingKnightId: number,
-}
-
-class Knight implements IKnight {
+class Knight {
   id: number
   hp: number
   constructor(id: number) {
@@ -18,18 +7,18 @@ class Knight implements IKnight {
   }
 }
 
-class GameState implements IGameState {
+class GameState {
   turn: number
   attackingKnightId: number
   defendingKnightId: number
   constructor(attackingKnightId: number, defendingKnightId: number) {
-    this.turn = 0
+    this.turn = 1
     this.attackingKnightId = attackingKnightId
     this.defendingKnightId = defendingKnightId
   }
 }
 
-const isGameInProgress = (knights: IKnight[]) => {
+const isGameInProgress = (knights: Knight[]) => {
   return knights.filter(k => k.hp > 0).length > 1
 }
 
@@ -37,34 +26,31 @@ const roll6Dice = () => {
   return Math.floor(Math.random() * 6) + 1
 }
 
-const knightAttack = (state: GameState, knights: Knight[]) => {
-  //const attackerId = state.attackingKnightId
-  const defenderId = state.defendingKnightId
+function findNextAliveId(firstCandidateId: number, knights: Knight[]) {
+  let nextId: number
+  for (let i = firstCandidateId; i < firstCandidateId + 6; i++) {
+    nextId = i > 6 ? i - 6 : i
+    if (knights[nextId - 1].hp > 0) {
+      break;
+    }
+  }
+  return nextId;
+}
 
+const knightAttack = (attackerId: number, defenderId: number, knights: Knight[]) => {
   // attack
   const attackRoll = roll6Dice()
   const defendingKnight = knights[defenderId - 1]
   defendingKnight.hp -= attackRoll
 
-  // calculate next turn state (we could extract a pair of functions here)
-  let nextAtkId: number
-  for (let i = defenderId; i < defenderId + 6; i++) {
-    nextAtkId = i > 6 ? i - 6 : i
-    if (knights[nextAtkId - 1].hp > 0) {
-      break;
-    }
+  // action feedback
+  console.log(`Knight ${attackerId} attacks Knight ${defenderId} and does ${attackRoll} points of damage!`)
+  if (defendingKnight.hp <= 0) {
+    const aliveKnights = knights.filter(k => k.hp > 0);
+    const idsListStr = aliveKnights.map(k => k.id).join(`,`);
+    const whoIsAliveStr = aliveKnights.length > 1 ? `But Knights ${idsListStr} are still alive!` : `But Knight ${idsListStr} is still alive!`
+    console.log(`Knight ${defenderId} is now dead! ` + whoIsAliveStr)
   }
-  state.attackingKnightId = nextAtkId
-
-  let nextDefId: number
-  for (let k = nextAtkId + 1; k < nextAtkId + 6 + 1; k++) {
-    nextDefId = k > 6 ? k - 6 : k
-    if (knights[nextDefId - 1].hp > 0) {
-      break;
-    }
-  }
-
-  state.defendingKnightId = nextDefId
 }
 
 const getLastStanding = (knights: Knight[])=> {
@@ -81,10 +67,14 @@ const main = () => {
   const knights = [knight1, knight2, knight3, knight4, knight5, knight6]
   const state = new GameState(1, 2)
   while (isGameInProgress(knights)) {
-    knightAttack(state, knights)
+    console.log(`=== Turn ${state.turn} ===`)
+    knightAttack(state.attackingKnightId, state.defendingKnightId, knights)
+    state.attackingKnightId = findNextAliveId(state.attackingKnightId + 1, knights)
+    state.defendingKnightId = findNextAliveId(state.attackingKnightId + 1, knights)
+    state.turn += 1
   }
   const winner = getLastStanding(knights)
-  console.log(`Game is over, knight ${winner.id} won with ${winner.hp} HP!`)
+  console.log(`Game is over, knight ${winner.id} won with ${winner.hp} HP after ${state.turn} turns!`)
 }
 
 main()
